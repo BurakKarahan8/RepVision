@@ -1,16 +1,19 @@
-def analyze_pushup(all_landmarks):
+def analyze_pushup(video_url):
     """
-    Videodaki TÜM karelerin eklem verilerini (all_landmarks) alır.
+    (SAHTE ANALİZ)
+    Gelecekte, bu fonksiyon da video_url'i kullanarak 
+    OpenCV ve MediaPipe ile video işleyecek.
     """
     
-    print("--- UZMAN: PUSHUP ANALİZİ ÇALIŞTI ---")
+    print("--- UZMAN: PUSHUP ANALİZİ ÇALIŞTI (SAHTE) ---")
     
-    frame_count = len(all_landmarks)
-    print(f"    -> {frame_count} adet kare (frame) analiz edilecek.")
+    # Gerçek analizde burada bir 'frame_count' olurdu
+    # Şimdilik sahte bir değer verelim
+    frame_count = 150 
     
     correct_reps = 5
     wrong_reps = 5
-    feedback = f"Şınav analizi (pushup_analyzer.py dosyasından) {frame_count} kare üzerinden başarılı."
+    feedback = f"Şınav analizi (pushup_analyzer.py dosyasından) {frame_count} kare üzerinden başarılı. (Bu sahte bir sonuçtur)."
     
     return {
         "correct_reps": correct_reps,

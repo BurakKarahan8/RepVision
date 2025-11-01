@@ -7,3 +7,6 @@ __pycache__/
 
 # Hassas Bilgiler
 .env
+
+# İşlenmiş videoları göz ardı et
+analysis_videos/

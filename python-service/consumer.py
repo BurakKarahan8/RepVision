@@ -1,12 +1,13 @@
 import pika
 import json
-import time
 import sys
 import requests
 import os 
 from dotenv import load_dotenv
-import video_processor 
-from analyzers import squat_analyzer, pushup_analyzer
+
+# SADECE UZMANLARI VE YARDIMCILARI IMPORT ET
+from analyzers import squat_analyzer, pushup_analyzer 
+# 'video_processor' import'u kaldırıldı
 
 # .env dosyasındaki değişkenleri yükle
 load_dotenv()
@@ -18,24 +19,23 @@ BACKEND_HOST = os.getenv('BACKEND_HOST')
 BACKEND_PORT = os.getenv('BACKEND_PORT')
 BACKEND_RESULTS_PATH = os.getenv('BACKEND_RESULTS_PATH')
 
+# --- KONTROL BLOĞU ---
 REQUIRED_VARS = {
-    'RABBITMQ_HOST': RABBITMQ_HOST,
-    'QUEUE_NAME': QUEUE_NAME,
-    'BACKEND_HOST': BACKEND_HOST,
-    'BACKEND_PORT': BACKEND_PORT,
+    'RABBITMQ_HOST': RABBITMQ_HOST, 'QUEUE_NAME': QUEUE_NAME,
+    'BACKEND_HOST': BACKEND_HOST, 'BACKEND_PORT': BACKEND_PORT,
     'BACKEND_RESULTS_PATH': BACKEND_RESULTS_PATH
 }
-
 missing_vars = [key for key, value in REQUIRED_VARS.items() if value is None]
-
 if missing_vars:
-    print("--- HATA: .env DOSYASI EKSİK VEYA HATALI ---")
-    print(f"Lütfen .env dosyasında şu değişkenlerin tanımlı olduğundan emin olun: {', '.join(missing_vars)}")
-    sys.exit(1) 
+    print(f"--- HATA: .env DOSYASI EKSİK: {', '.join(missing_vars)} ---")
+    sys.exit(1)
+# ------------------------------------
 
 BACKEND_URL = f"http://{BACKEND_HOST}:{BACKEND_PORT}{BACKEND_RESULTS_PATH}"
 
+
 def send_results_to_backend(video_id, result):
+    """Analiz sonucunu Spring Boot API'sine POST eder."""
     payload = {
         "videoId": video_id,
         "correctReps": result.get("correct_reps", 0),
@@ -53,6 +53,7 @@ def send_results_to_backend(video_id, result):
 
 
 def callback(ch, method, properties, body):
+    """Kuyruktan bir mesaj alındığında bu fonksiyon çalışır."""
     print(f"\n--- [x] YENİ MESAJ ALINDI ---")
     
     video_id = None
@@ -70,31 +71,32 @@ def callback(ch, method, properties, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        print(f" [i] Video ID: {video_id}, Hareket: {exercise_name}, URL: {video_url}")
+        print(f" [i] Video ID: {video_id}, Hareket: {exercise_name}")
         
-        print(f" [>] Video kareleri işleniyor (OpenCV/MediaPipe)...")
-        all_landmarks, error_msg = video_processor.process_video(video_url)
-
-        if error_msg:
-             analysis_result = {"feedback": error_msg, "correct_reps": 0, "wrong_reps": 0}
+        # 1. Dağıtım (Senin istediğin mantık)
+        # 'video_processor' yok. Doğrudan 'uzman' çağrılıyor.
+        print(f" [>] Uzman analizci çağrılıyor: {exercise_name}")
+        
+        if exercise_name.lower() == 'squat':
+            # Uzmana URL'i VE video_id'yi gönderiyoruz
+            analysis_result = squat_analyzer.analyze_squat(video_url, video_id)
+            
+        elif exercise_name.lower() in ['push-up', 'pushup']:
+            # Push-up uzmanını çağır
+            analysis_result = pushup_analyzer.analyze_pushup(video_url)
+            
         else:
-            print(f" [>] Uzman analizci çağrılıyor: {exercise_name}")
-            if exercise_name.lower() == 'squat':
-                analysis_result = squat_analyzer.analyze_squat(all_landmarks)
-            elif exercise_name.lower() in ['push-up', 'pushup']:
-                analysis_result = pushup_analyzer.analyze_pushup(all_landmarks)
-            else:
-                print(f" [!] UYARI: '{exercise_name}' için bir analizci bulunamadı.")
-                analysis_result = {
-                    "correct_reps": 0,
-                    "wrong_reps": 0,
-                    "feedback": f"'{exercise_name}' hareketi için analiz modülü henüz eklenmemiş."
-                }
+            print(f" [!] UYARI: '{exercise_name}' için bir analizci bulunamadı.")
+            analysis_result = {
+                "correct_reps": 0, "wrong_reps": 0,
+                "feedback": f"'{exercise_name}' hareketi için analiz modülü henüz eklenmemiş."
+            }
 
         print(f" [>] Analiz tamamlandı. Sonuç: {analysis_result}")
 
+        # 2. Sonuçları Geri Gönder
         send_results_to_backend(video_id, analysis_result)
-
+        
         print(f" [✓] Mesaj başarıyla işlendi ve kuyruktan silindi.")
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
@@ -105,9 +107,10 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
 def main():
+    """Ana dinleyici fonksiyonu."""
     try:
         connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=RABBITMQ_HOST) 
+            pika.ConnectionParameters(host=RABBITMQ_HOST)
         )
         channel = connection.channel()
         channel.queue_declare(queue=QUEUE_NAME, durable=False) 
@@ -124,7 +127,6 @@ def main():
     except KeyboardInterrupt:
         print('\nKapatıldı.')
     sys.exit(0)
-
 
 if __name__ == '__main__':
     main()
