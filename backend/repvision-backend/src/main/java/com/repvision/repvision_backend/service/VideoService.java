@@ -11,6 +11,8 @@ import com.repvision.repvision_backend.model.VideoAnalysis;
 import com.repvision.repvision_backend.model.enums.AnalysisStatus;
 import com.repvision.repvision_backend.repository.UserRepository;
 import com.repvision.repvision_backend.repository.VideoAnalysisRepository;
+import com.repvision.repvision_backend.model.Notification;
+import com.repvision.repvision_backend.repository.NotificationRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -32,6 +34,12 @@ public class VideoService {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private PushNotificationService pushNotificationService;
 
     @Transactional
     public VideoAnalysis createAnalysisRequest(VideoUploadRequest videoRequest, String userEmail) {
@@ -56,13 +64,35 @@ public class VideoService {
     public void updateAnalysisResults(AnalysisResultRequest resultRequest) {
         VideoAnalysis analysis = videoAnalysisRepository.findById(resultRequest.getVideoId())
                 .orElseThrow(() -> new RuntimeException("Video analizi kaydı bulunamadı: " + resultRequest.getVideoId()));
+
         analysis.setCorrectReps(resultRequest.getCorrectReps());
         analysis.setWrongReps(resultRequest.getWrongReps());
         analysis.setFeedback(resultRequest.getFeedback());
         analysis.setStatus(AnalysisStatus.COMPLETED);
         analysis.setCompletedAt(LocalDateTime.now());
         videoAnalysisRepository.save(analysis);
-        System.out.println("Video ID " + resultRequest.getVideoId() + " için analiz sonuçları veritabanına kaydedildi.");
+
+        System.out.println("Video ID " + resultRequest.getVideoId() + " için analiz sonuçları kaydedildi.");
+
+        Notification notification = new Notification();
+        notification.setUser(analysis.getUser());
+        notification.setTitle(analysis.getExerciseName() + " Analiziniz Hazır!");
+        notification.setMessage(
+                resultRequest.getCorrectReps() + " doğru, " +
+                        resultRequest.getWrongReps() + " yanlış tekrar."
+        );
+        notification.setRelatedVideoId(analysis.getId());
+        notification.setRead(false);
+
+        notificationRepository.save(notification);
+        System.out.println("Kullanıcı ID " + analysis.getUser().getId() + " için bildirim oluşturuldu.");
+
+        pushNotificationService.sendPushNotification(
+                analysis.getUser().getPushToken(),
+                notification.getTitle(),
+                notification.getMessage(),
+                notification.getRelatedVideoId()
+        );
     }
 
     public List<AnalysisCategoryDto> getAnalysisCategories(String userEmail) {

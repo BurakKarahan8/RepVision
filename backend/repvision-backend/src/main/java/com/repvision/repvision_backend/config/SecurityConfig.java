@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/user/**",
                                 "/api/videos/results").permitAll()
                         .anyRequest().authenticated()
                 );

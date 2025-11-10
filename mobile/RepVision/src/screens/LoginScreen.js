@@ -22,6 +22,7 @@ import { Video } from 'expo-av'; // Arka plan videosu için
 import Svg, { Path } from 'react-native-svg'; // Logo için
 import { API_URL } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotificationsAsync } from '../utils/notificationService';
 
 // Tasarımdaki renkleri sabit olarak tanımlayalım
 const COLORS = {
@@ -72,6 +73,7 @@ const LoginScreen = ({ navigation }) => {
           email: authResponse.email
         };
         await AsyncStorage.setItem('@user_info', JSON.stringify(userInfo));
+        registerForPushNotificationsAsync().catch(err => console.error("Push token kaydı başarısız:", err));
         console.log('Giriş başarılı, jeton kaydedildi.');
         navigation.replace('MainApp', { user: userInfo });
         

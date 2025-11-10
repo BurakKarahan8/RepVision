@@ -1,0 +1,9 @@
+# Build için gereksiz olan ve devasa yer kaplayan 
+# node_modules klasörünü yoksay.
+node_modules/
+
+# Git klasörünü yoksay
+.git/
+
+# Expo'nun yerel ayarlarını yoksay
+.expo/

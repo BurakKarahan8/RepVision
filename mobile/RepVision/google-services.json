@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "361457014171",
+    "project_id": "repvision-ba56a",
+    "storage_bucket": "repvision-ba56a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:361457014171:android:7d822d41521519d1a47d3e",
+        "android_client_info": {
+          "package_name": "com.burakrhn.RepVision"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAD2t1wQcCV1vqFFA3-15HzUuQ1hcHpZmQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

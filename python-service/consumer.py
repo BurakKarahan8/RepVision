@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 
 # SADECE UZMANLARI VE YARDIMCILARI IMPORT ET
-from analyzers import squat_analyzer, pushup_analyzer 
+from analyzers import squat_analyzer, pushup_analyzer, barbell_curl_analyzer
 # 'video_processor' import'u kaldırıldı
 
 # .env dosyasındaki değişkenleri yükle
@@ -83,7 +83,11 @@ def callback(ch, method, properties, body):
             
         elif exercise_name.lower() in ['push-up', 'pushup']:
             # Push-up uzmanını çağır
-            analysis_result = pushup_analyzer.analyze_pushup(video_url)
+            analysis_result = pushup_analyzer.analyze_pushup(video_url, video_id)
+
+        elif exercise_name.lower() in ['barbell curl', 'barbell_curl', 'curl', 'barbel-curl']:
+            # Barbell Curl uzmanını çağır
+            analysis_result = barbell_curl_analyzer.analyze_barbell_curl(video_url, video_id)
             
         else:
             print(f" [!] UYARI: '{exercise_name}' için bir analizci bulunamadı.")

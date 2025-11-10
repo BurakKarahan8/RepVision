@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   StatusBar,
-  Alert 
+  Alert // Bunu artık sadece 'İzin Gerekli' için kullanıyoruz
 } from 'react-native';
 import { Button, Chip, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Video } from 'expo-av';
-import * as ImagePicker from 'expo-image-picker'; 
+import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
-import { API_URL } from '../config/api'; 
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import { API_URL } from '../config/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// --- DEĞİŞİKLİK BURADA (1/3) ---
+// Toast kütüphanesini import et
+import Toast from 'react-native-toast-message';
 
 // Tasarım renkleri
 const COLORS = {
@@ -27,7 +31,7 @@ const COLORS = {
 };
 
 // Seçenekler
-const EXERCISES = ['Squat', 'Push-up', 'Deadlift', 'Lunge', 'Other'];
+const EXERCISES = ['Squat', 'Push-up', 'Barbell Curl'];
 
 const UploadScreen = ({ route }) => {
   // Login'den gelen kullanıcı verisi
@@ -61,18 +65,19 @@ const UploadScreen = ({ route }) => {
   // Analiz için gönderme fonksiyonu
   const handleSubmit = async () => {
     if (!selectedVideo || !selectedExercise) {
+      // Bu hala Alert olabilir veya Toast'a çevrilebilir
       Alert.alert('Eksik Bilgi', 'Lütfen bir video seçin ve hareket adını belirtin.');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
       console.log('Cloudinary\'e yükleniyor...');
-      
+
       const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
       const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-      
+
       const formData = new FormData();
       formData.append('file', {
         uri: selectedVideo,
@@ -82,7 +87,7 @@ const UploadScreen = ({ route }) => {
       formData.append('upload_preset', uploadPreset);
 
       const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
-      
+
       const cloudinaryResponse = await fetch(cloudinaryUrl, {
         method: 'POST',
         body: formData,
@@ -96,11 +101,11 @@ const UploadScreen = ({ route }) => {
       if (cloudinaryData.error || !cloudinaryData.secure_url) {
         throw new Error('Cloudinary yüklemesi başarısız oldu: ' + (cloudinaryData.error?.message || 'Bilinmeyen hata'));
       }
-      
+
       const videoUrl = cloudinaryData.secure_url;
       console.log('Cloudinary yüklemesi başarılı:', videoUrl);
       console.log('Backend API\'ye gönderiliyor...');
-      
+
       const token = await AsyncStorage.getItem('@auth_token');
       if (!token) {
         Alert.alert('Hata', 'Oturum bulunamadı. Lütfen tekrar giriş yapın.');
@@ -112,7 +117,7 @@ const UploadScreen = ({ route }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           videoUrl: videoUrl,
@@ -127,29 +132,45 @@ const UploadScreen = ({ route }) => {
       const savedAnalysis = await backendResponse.json();
       console.log('Backend kaydı başarılı:', savedAnalysis.id);
       setIsLoading(false);
-      Alert.alert(
-        'Yükleme Başarılı!',
-        'Videonuz analiz için sıraya alındı. Sonuçları "My Analyses" sekmesinden kontrol edebilirsiniz.'
-      );
-      
+
+      // --- DEĞİŞİKLİK BURADA (2/3) ---
+      // Eski Alert.alert yerine Toast bildirimini göster
+      Toast.show({
+        type: 'success', // 'success', 'error', 'info'
+        text1: 'Başarılı!',
+        text2: 'Videonuz işlenmek üzere kaydedildi.',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+      // --- Değişiklik Bitişi ---
+
       setSelectedVideo(null);
       setSelectedExercise(null);
 
     } catch (error) {
       console.error('handleSubmit hatası:', error);
       setIsLoading(false);
-      Alert.alert('Bir Hata Oluştu', error.message);
+
+      // --- DEĞİŞİKLİK BURADA (3/3) ---
+      // Hata durumundaki Alert'i de Toast ile değiştir
+      Toast.show({
+        type: 'error',
+        text1: 'Bir Hata Oluştu',
+        text2: error.message || 'Video yüklenemedi.',
+        position: 'top',
+      });
+      // --- Değişiklik Bitişi ---
     }
   };
 
   const isSubmitDisabled = !selectedVideo || !selectedExercise || isLoading;
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-      
+
       {/* Ana içerik alanı */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
@@ -231,6 +252,7 @@ const UploadScreen = ({ route }) => {
   );
 };
 
+// STYLES (Değişiklik yok)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -243,7 +265,7 @@ const styles = StyleSheet.create({
     padding: 16, // p-4
     paddingBottom: 150, // Yüzen buton ve tab bar için boşluk
   },
-  
+
   // Video Yükleme Kutusu
   uploadBox: {
     alignItems: 'center',

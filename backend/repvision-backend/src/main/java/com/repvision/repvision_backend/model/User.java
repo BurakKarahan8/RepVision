@@ -21,4 +21,6 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "push_token", nullable = true, unique = true)
+    private String pushToken;
 }

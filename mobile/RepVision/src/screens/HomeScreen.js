@@ -7,25 +7,30 @@ import {
   Image, 
   StatusBar, 
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert // Alert eklendi (Bildirimler için geçici)
 } from 'react-native';
-import { Card, Menu, Divider, Button } from 'react-native-paper';
+// Badge (kırmızı nokta) ve Menu için importlar GÜNCELLENDİ
+import { Card, Menu, Divider, Button, Badge } from 'react-native-paper'; 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
-import { authFetch } from '../utils/apiClient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authFetch } from '../utils/apiClient'; // Güvenli API istemcimiz
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Çıkış yapmak için
 
+// Renkler
 const COLORS = {
   background: '#1A1A1A',
-  surface: '#2a2a2a',
+  surface: '#2a2a2a', // Menü arka planı için
+  border: '#3f3f46', // Divider için
   accent: '#39FF14',
   text: '#FFFFFF',
   textSecondary: '#A9A9A9',
   textMedium: '#E0E0E0',
 };
 
+// Dairesel İlerleme Çubuğu Bileşeni
 const RadialProgressBar = ({ progress = 0 }) => {
   const size = 180;
   const strokeWidth = 14;
@@ -46,7 +51,7 @@ const RadialProgressBar = ({ progress = 0 }) => {
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
+          strokeDashoffset={strokeDashoffset} 
           strokeLinecap="round"
           transform={`rotate(-90 ${center} ${center})`}
         />
@@ -58,6 +63,7 @@ const RadialProgressBar = ({ progress = 0 }) => {
   );
 };
 
+// Stat Kartı Bileşeni
 const StatCard = ({ label, value }) => {
   return (
     <Card style={styles.statCard}>
@@ -71,17 +77,20 @@ const StatCard = ({ label, value }) => {
 
 
 const HomeScreen = ({ route, navigation }) => {
-  const { user } = route.params;
+  const { user } = route.params; 
   
+  // State'ler
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const [menuVisible, setMenuVisible] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // Kırmızı nokta için
+
   const openMenu = () => setMenuVisible(true);
   const closeMenu = () => setMenuVisible(false);
 
+  // Çıkış Yap Fonksiyonu
   const handleLogout = async () => {
-    closeMenu();
+    closeMenu(); 
     try {
       await AsyncStorage.removeItem('@auth_token');
       await AsyncStorage.removeItem('@user_info');
@@ -93,26 +102,47 @@ const HomeScreen = ({ route, navigation }) => {
     }
   };
 
+  // Veri Çekme Fonksiyonu (GÜNCELLENDİ)
   const fetchData = async () => {
     try {
-      const response = await authFetch('/videos/my-summary');
+      // İki API isteğini aynı anda yap (daha hızlı)
+      const [summaryResponse, countResponse] = await Promise.all([
+        authFetch('/videos/my-summary'), // Bu doğru: /api + /videos/my-summary
+        
+        // --- HATA DÜZELTMESİ BURADA ---
+        // '/api/notifications/my-unread-count' idi,
+        // '/notifications/my-unread-count' olarak düzeltildi.
+        authFetch('/notifications/my-unread-count') // Bu doğru: /api + /notifications/my-unread-count
+      ]);
 
-      if (!response.ok) {
+      if (!summaryResponse.ok) {
+        const errorText = await summaryResponse.text();
+        console.error("Özet verisi hatası:", errorText);
         throw new Error('Failed to fetch summary');
       }
+      if (!countResponse.ok) {
+        const errorText = await countResponse.text();
+        console.error("Bildirim sayısı hatası:", errorText);
+        throw new Error('Failed to fetch unread count');
+      }
       
-      const data = await response.json();
-      setSummary(data);
+      const summaryData = await summaryResponse.json();
+      const countData = await countResponse.json();
+      
+      setSummary(summaryData);
+      setUnreadCount(countData); 
+
     } catch (e) {
-      console.error(e);
+      console.error("fetchData Hatası:", e.message); // Hata ayıklama için
       if (e.message.includes('Authentication token not found')) {
-        navigation.replace('Login');
+        navigation.replace('Login'); 
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Ekran her açıldığında veriyi yeniden çeker
   useFocusEffect(
     useCallback(() => {
       setIsLoading(true);
@@ -127,6 +157,8 @@ const HomeScreen = ({ route, navigation }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContentContainer}
       >
+        
+        {/* 1. Header (Bildirim ikonu GÜNCELLENDİ) */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
             <Image
@@ -136,11 +168,19 @@ const HomeScreen = ({ route, navigation }) => {
             <Text style={styles.helloText}>Hello, {user.fullName.split(' ')[0]}</Text>
           </View>
 
+          {/* Header İkonları (Bildirim + Menü) */}
           <View style={styles.headerActions}>
-            <TouchableOpacity onPress={() => Alert.alert("Bildirimler", "Burası bildirimler ekranı olacak.")}>
+            
+            {/* ZİL İKONU (Tıklanabilir ve Kırmızı Noktalı) */}
+            <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
               <MaterialIcons name="notifications" size={28} color={COLORS.textSecondary} />
+              {/* Okunmamış bildirim varsa KIRMIZI NOKTA göster */}
+              {unreadCount > 0 && (
+                <Badge style={styles.badge}>{unreadCount}</Badge>
+              )}
             </TouchableOpacity>
 
+            {/* Çıkış Yap Menüsü (Dots) */}
             <Menu
               visible={menuVisible}
               onDismiss={closeMenu}
@@ -159,25 +199,29 @@ const HomeScreen = ({ route, navigation }) => {
               />
               <Divider style={{ backgroundColor: COLORS.border }} />
               <Menu.Item 
-                onPress={handleLogout} 
+                onPress={handleLogout} // Çıkış yap fonksiyonumuz
                 title="Logout" 
-                titleStyle={{ color: '#FF8A80' }}
+                titleStyle={{ color: '#FF8A80' }} // Kırmızı tonu
                 leftIcon={() => <MaterialIcons name="logout" size={20} color={'#FF8A80'} />}
               />
             </Menu>
           </View>
         </View>
 
+        {/* 2. Başlık */}
         <Text style={styles.headline}>Overall Form Accuracy</Text>
 
+        {/* Yükleniyorsa veya Veri Yoksa */}
         {isLoading || !summary ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.accent} />
           </View>
         ) : (
           <> 
+            {/* 3. Dairesel İlerleme Çubuğu (Canlı Veri) */}
             <RadialProgressBar progress={summary.overallAccuracy} /> 
 
+            {/* 4. Stat Kartları (Canlı Veri) */}
             <View style={styles.statsContainer}>
               <StatCard 
                 label="Total Reps Analyzed" 
@@ -199,6 +243,7 @@ const HomeScreen = ({ route, navigation }) => {
   );
 };
 
+// Stiller (Badge stili eklendi)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollView: { paddingHorizontal: 16 },
@@ -210,9 +255,15 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     marginTop: 16,
   },
-  headerActions: {
+  headerActions: { // Header ikonlarını (zil ve menü) yan yana koyar
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  badge: { // Kırmızı nokta
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF3B30', 
   },
   userInfo: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   profilePic: {
