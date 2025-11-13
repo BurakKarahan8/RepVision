@@ -146,7 +146,7 @@ def analyze_barbell_curl(video_url, video_id):
         feedback_list = set()
         is_fully_curled = False 
         
-        EXTEND_THRESHOLD = 140
+        EXTEND_THRESHOLD = 120
         CURL_THRESHOLD = 60   
         
         frame_count = 0
