@@ -114,7 +114,10 @@ def main():
     """Ana dinleyici fonksiyonu."""
     try:
         connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=RABBITMQ_HOST)
+            pika.ConnectionParameters(
+                host=RABBITMQ_HOST,
+                heartbeat=0,
+                )
         )
         channel = connection.channel()
         channel.queue_declare(queue=QUEUE_NAME, durable=False) 

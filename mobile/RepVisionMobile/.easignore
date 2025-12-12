@@ -1,0 +1,10 @@
+﻿node_modules/
+.git/
+.expo/
+android/
+ios/
+backend/
+python-service/
+repvision-backend/
+archive-inspect/
+kontrol-klasoru/
