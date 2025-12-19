@@ -31,7 +31,7 @@ const COLORS = {
 };
 
 // Seçenekler
-const EXERCISES = ['Squat', 'Push-up', 'Barbell Curl'];
+const EXERCISES = ['Squat', 'Push-up', 'Barbell Curl', 'Shoulder Press', 'Bench Press'];
 
 const UploadScreen = ({ route }) => {
   // Login'den gelen kullanıcı verisi

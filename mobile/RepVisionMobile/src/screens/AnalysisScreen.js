@@ -24,10 +24,11 @@ const COLORS = {
 
 const getIconForExercise = (exerciseName) => {
   const name = exerciseName.toLowerCase();
-  if (name.includes('squat')) return 'weight-lifter';
-  if (name.includes('push')) return 'arm-flex';
-  if (name.includes('deadlift')) return 'weight';
-  if (name.includes('press')) return 'arrow-up-bold-outline';
+  if (name.includes('squat')) return 'human-handsdown'; 
+  if (name.includes('push')) return 'arrow-down-bold-hexagon-outline';
+  if (name.includes('bench')) return 'dumbbell'; 
+  if (name.includes('shoulder')) return 'weight-lifter';
+  if (name.includes('curl')) return 'arm-flex';
   return 'run';
 };
 
