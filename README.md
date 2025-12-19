@@ -208,7 +208,7 @@ Projenin beyni olan Python servisi, **MediaPipe** kütüphanesini kullanarak ins
     
 *   [Portfolio](https://devburakkarahan.com)
     
-*   [LinkedIn](https://linkedin.com/in/burak-karahan)
+*   [LinkedIn](https://linkedin.com/in/burak-karahan-54a86b250)
     
 
 📄 Lisans
