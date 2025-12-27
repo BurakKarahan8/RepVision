@@ -5,14 +5,9 @@ import os
 import requests
 import tempfile
 
-# MediaPipe Araçları
 mp_pose = mp.solutions.pose
 
-# --- 1. AÇI HESAPLAMA (2D - Reference Code ile Aynı) ---
 def calculate_angle(a, b, c):
-    """
-    Üç eklem noktası arasındaki açıyı 2D (XY) hesaplar.
-    """
     try:
         p_a = np.array([a.x, a.y])
         p_b = np.array([b.x, b.y])
@@ -32,14 +27,12 @@ def calculate_angle(a, b, c):
         print(f"Açı hesaplama hatası: {e}")
         return None
 
-# --- 2. ÇİZİM FONKSİYONU (Gelişmiş Görselleştirme) ---
 def draw_shoulder_press_stats(image, landmarks, stats, feedback, active_side):
     h, w, _ = image.shape
     
-    # İki kolu da çiziyoruz (Estetik Görünüm)
     sides_indices = [
-        [11, 13, 15], # Sol: Omuz-Dirsek-Bilek
-        [12, 14, 16]  # Sağ: Omuz-Dirsek-Bilek
+        [11, 13, 15],
+        [12, 14, 16]
     ]
 
     for indices in sides_indices:
@@ -52,45 +45,36 @@ def draw_shoulder_press_stats(image, landmarks, stats, feedback, active_side):
             p_elbow = (int(elbow.x * w), int(elbow.y * h))
             p_wrist = (int(wrist.x * w), int(wrist.y * h))
             
-            # Turuncu Çizgiler
             cv2.line(image, p_shoulder, p_elbow, (245, 117, 66), 3)
             cv2.line(image, p_elbow, p_wrist, (245, 117, 66), 3)
             
-            # Pembe Noktalar
             cv2.circle(image, p_shoulder, 6, (245, 66, 230), -1)
             cv2.circle(image, p_elbow, 6, (245, 66, 230), -1)
             cv2.circle(image, p_wrist, 6, (245, 66, 230), -1)
         except:
             pass
 
-    # --- İSTATİSTİK KUTUSU ---
     cv2.rectangle(image, (0, 0), (300, 200), (24, 24, 24), -1)
     
-    # Doğru Tekrar
     cv2.putText(image, 'DOGRU REPS', (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 1, cv2.LINE_AA)
     cv2.putText(image, str(stats["correct_reps"]), (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (57, 255, 20), 2, cv2.LINE_AA)
     
-    # Yanlış Tekrar
     cv2.putText(image, 'YANLIS REPS', (150, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 1, cv2.LINE_AA)
     cv2.putText(image, str(stats["wrong_reps"]), (155, 70), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2, cv2.LINE_AA)
     
-    # Durum (UP/DOWN)
     status_color = (0, 255, 0) if stats["state"] == "up" else (200, 200, 200)
     cv2.putText(image, 'STATE', (15, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 1, cv2.LINE_AA)
     cv2.putText(image, stats["state"].upper(), (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 1.5, status_color, 2, cv2.LINE_AA)
 
-    # Anlık Açı (Aktif Taraf)
     side_text = "SOL ACI" if active_side == "left" else "SAG ACI"
     cv2.putText(image, side_text, (150, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,255,255), 1, cv2.LINE_AA)
     angle_val = str(int(stats["elbow_angle"])) if stats["elbow_angle"] is not None else '0'
     cv2.putText(image, angle_val, (155, 150), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2, cv2.LINE_AA)
 
-    # Feedback Mesajı (Alt Bar)
     if feedback:
         cv2.rectangle(image, (0, h - 50), (w, h), (24, 24, 24), -1)
         cv2.putText(image, feedback, (15, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
 
-# --- 3. ANA ANALİZ FONKSİYONU ---
 def analyze_shoulder_press(video_url, video_id):
     
     print(f"--- UZMAN: SHOULDER PRESS ANALİZİ (ID: {video_id}) BAŞLADI ---")
@@ -100,7 +84,6 @@ def analyze_shoulder_press(video_url, video_id):
     out = None
     
     try:
-        # --- 1. VİDEOYU İNDİR (Senin kod yapınla birebir aynı) ---
         print(f" [i] Video Cloudinary'den indiriliyor...")
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
             temp_file_path = temp_file.name
@@ -112,17 +95,14 @@ def analyze_shoulder_press(video_url, video_id):
                     f.write(chunk)
         print(f" [i] Video başarıyla indirildi: {temp_file_path}")
         
-        # --- 2. VİDEOYU AÇ ---
         cap = cv2.VideoCapture(temp_file_path)
         if not cap.isOpened():
             return {"correct_reps": 0, "wrong_reps": 0, "feedback": "Video dosyası okunamadı."}
 
-        # Video bilgilerini al
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         
-        # Çıktı dosyasını ayarla
         output_folder = 'analysis_videos'
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
@@ -131,31 +111,24 @@ def analyze_shoulder_press(video_url, video_id):
         output_path = os.path.join(output_folder, output_filename)
         out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
 
-        # --- 3. ANALİZ MANTIĞI DEĞİŞKENLERİ ---
         correct_reps = 0
         wrong_reps = 0
-        state = "down" # Press hareketi omuz hizasında başlar
+        state = "down"
         feedback = ""
         feedback_list = set()
-        
-        # Zirve Takibi için Değişken (Her tekrarın maksimum yüksekliği)
         max_angle_in_rep = 0
-        
-        # EŞİKLER
-        UP_THRESHOLD = 110   # Kollar tam yukarıda
-        DOWN_THRESHOLD = 80  # Kollar omuz hizasında
-        
+        UP_THRESHOLD = 110
+        DOWN_THRESHOLD = 80
         frame_count = 0
         
-        # Pose Modelini Başlat
         with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
             while cap.isOpened():
                 ret, frame = cap.read()
-                if not ret: break
+                if not ret:
+                    break
                 
                 frame_count += 1
                 
-                # Görüntü İşleme
                 image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 image.flags.writeable = False
                 results = pose.process(image)
@@ -164,12 +137,11 @@ def analyze_shoulder_press(video_url, video_id):
                 
                 feedback = ""
                 current_angle = 0
-                active_side = "left" # Varsayılan
+                active_side = "left"
 
                 if results.pose_landmarks:
                     landmarks = results.pose_landmarks.landmark
                     
-                    # --- A. AKILLI TARAF SEÇİMİ ---
                     left_vis = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER].visibility
                     right_vis = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER].visibility
                     
@@ -184,41 +156,29 @@ def analyze_shoulder_press(video_url, video_id):
                         elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW]
                         wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST]
 
-                    # --- B. AÇI HESABI ---
                     current_angle = calculate_angle(shoulder, elbow, wrist)
                     
-                    # --- C. HAREKET & SAYMA MANTIĞI ---
                     if current_angle is not None:
-                        
-                        # Durum 1: AŞAĞIDA (DOWN)
-                        # Eğer 90'ı geçerse hareket başladı demektir -> UP moduna geç
                         if state == "down":
                             if current_angle > DOWN_THRESHOLD: 
                                 state = "up"
-                                max_angle_in_rep = current_angle # Takibe başla
+                                max_angle_in_rep = current_angle
                         
-                        # Durum 2: YUKARIDA (UP)
                         elif state == "up":
-                            # Sürekli en yüksek açıyı kaydet
                             if current_angle > max_angle_in_rep:
                                 max_angle_in_rep = current_angle
                             
-                            # Tekrar 90'ın altına indi mi? (Hareket Bitti)
                             if current_angle < DOWN_THRESHOLD:
                                 state = "down"
                                 
-                                # KARAR ANI: Zirve noktası yeterli miydi?
                                 if max_angle_in_rep >= UP_THRESHOLD:
                                     correct_reps += 1
                                     feedback = "Harika Form!"
-                                    print(f" -> DOGRU TEKRAR! Toplam: {correct_reps} (Aci: {int(max_angle_in_rep)})")
                                 else:
                                     wrong_reps += 1
                                     feedback = "Daha Yukari Itin!"
                                     feedback_list.add("Kollari tam duzlestirmediniz")
-                                    print(f" -> YANLIS TEKRAR! Toplam: {wrong_reps} (Aci: {int(max_angle_in_rep)} < {UP_THRESHOLD})")
 
-                # --- D. ÇİZİM VE KAYIT ---
                 stats_data = {
                     "correct_reps": correct_reps, 
                     "wrong_reps": wrong_reps,
@@ -231,7 +191,6 @@ def analyze_shoulder_press(video_url, video_id):
                 
                 out.write(image)
 
-        # --- 4. BİTİŞ RAPORU ---
         print(f"    -> {frame_count} kare analiz edildi.")
         print(f"    -> İşlenmiş video '{output_path}' olarak kaydedildi.")
         
@@ -249,12 +208,12 @@ def analyze_shoulder_press(video_url, video_id):
         return {"correct_reps": 0, "wrong_reps": 0, "feedback": f"Sistem hatası: {str(e)}"}
         
     finally:
-        # --- 5. TEMİZLİK (CLEANUP) - SENİN İSTEDİĞİN GİBİ ---
-        if cap: cap.release()
-        if out: out.release()
+        if cap:
+            cap.release()
+        if out:
+            out.release()
         cv2.destroyAllWindows()
         
-        # Geçici dosyayı sil
         if temp_file_path and os.path.exists(temp_file_path):
             os.remove(temp_file_path)
             print(f" [i] Geçici dosya silindi: {temp_file_path}")
