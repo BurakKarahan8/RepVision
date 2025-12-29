@@ -228,10 +228,6 @@ const HomeScreen = ({ route, navigation }) => {
                 value={summary.totalCorrectReps + summary.totalWrongReps} 
               />
               <StatCard 
-                label="Common Mistake" 
-                value={summary.mostCommonMistake} 
-              />
-              <StatCard 
                 label="Total Videos" 
                 value={summary.totalCompletedVideos} 
               />

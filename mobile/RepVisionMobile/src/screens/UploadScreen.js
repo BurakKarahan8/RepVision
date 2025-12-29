@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
-  Alert // Bunu artık sadece 'İzin Gerekli' için kullanıyoruz
+  Alert
 } from 'react-native';
 import { Button, Chip, ActivityIndicator } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,35 +16,27 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { API_URL } from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// --- DEĞİŞİKLİK BURADA (1/3) ---
-// Toast kütüphanesini import et
 import Toast from 'react-native-toast-message';
 
-// Tasarım renkleri
 const COLORS = {
   background: '#1A1A1A',
-  surface: '#2a2a2a', // zinc-800
-  border: '#3f3f46', // zinc-700
+  surface: '#2a2a2a',
+  border: '#3f3f46',
   accent: '#39FF14',
   text: '#FFFFFF',
   textSecondary: '#B3B3B3',
 };
 
-// Seçenekler
 const EXERCISES = ['Squat', 'Push-up', 'Barbell Curl', 'Shoulder Press', 'Bench Press'];
 
 const UploadScreen = ({ route }) => {
-  // Login'den gelen kullanıcı verisi
   const { user } = route.params;
 
-  // Ekranın state'leri
-  const [selectedVideo, setSelectedVideo] = useState(null); // 'file://...'
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Video seçme fonksiyonu
   const handleSelectVideo = async () => {
-    // Galeriyi açmak için izin iste
     let permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.granted === false) {
       Alert.alert('İzin Gerekli', 'Video yüklemek için galeriye erişim izni vermelisiniz.');
@@ -52,7 +44,7 @@ const UploadScreen = ({ route }) => {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos, // Sadece video seç
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsEditing: true,
       quality: 0.7,
     });
@@ -62,10 +54,8 @@ const UploadScreen = ({ route }) => {
     }
   };
 
-  // Analiz için gönderme fonksiyonu
   const handleSubmit = async () => {
     if (!selectedVideo || !selectedExercise) {
-      // Bu hala Alert olabilir veya Toast'a çevrilebilir
       Alert.alert('Eksik Bilgi', 'Lütfen bir video seçin ve hareket adını belirtin.');
       return;
     }
@@ -133,16 +123,13 @@ const UploadScreen = ({ route }) => {
       console.log('Backend kaydı başarılı:', savedAnalysis.id);
       setIsLoading(false);
 
-      // --- DEĞİŞİKLİK BURADA (2/3) ---
-      // Eski Alert.alert yerine Toast bildirimini göster
       Toast.show({
-        type: 'success', // 'success', 'error', 'info'
+        type: 'success',
         text1: 'Başarılı!',
         text2: 'Videonuz işlenmek üzere kaydedildi.',
         position: 'top',
         visibilityTime: 3000,
       });
-      // --- Değişiklik Bitişi ---
 
       setSelectedVideo(null);
       setSelectedExercise(null);
@@ -150,16 +137,12 @@ const UploadScreen = ({ route }) => {
     } catch (error) {
       console.error('handleSubmit hatası:', error);
       setIsLoading(false);
-
-      // --- DEĞİŞİKLİK BURADA (3/3) ---
-      // Hata durumundaki Alert'i de Toast ile değiştir
       Toast.show({
         type: 'error',
         text1: 'Bir Hata Oluştu',
         text2: error.message || 'Video yüklenemedi.',
         position: 'top',
       });
-      // --- Değişiklik Bitişi ---
     }
   };
 
@@ -168,14 +151,10 @@ const UploadScreen = ({ route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
-
-      {/* Ana içerik alanı */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 1. Video Yükleme Alanı */}
-        {/* Video seçiliyse önizle, seçili değilse boş kutuyu göster */}
         {selectedVideo ? (
           <View style={styles.videoPreviewContainer}>
             <Video
@@ -203,15 +182,13 @@ const UploadScreen = ({ route }) => {
             </Button>
           </TouchableOpacity>
         )}
-
-        {/* 2. Egzersiz Seçimi Alanı */}
         <View style={styles.exerciseSection}>
           <Text style={styles.sectionTitle}>What exercise is this?</Text>
           <View style={styles.chipContainer}>
             {EXERCISES.map((exercise) => (
               <Chip
                 key={exercise}
-                mode="flat" // 'flat' en temiz görünümü verir
+                mode="flat"
                 selected={selectedExercise === exercise}
                 onPress={() => setSelectedExercise(exercise)}
                 style={[
@@ -230,8 +207,6 @@ const UploadScreen = ({ route }) => {
         </View>
 
       </ScrollView>
-
-      {/* 3. "Submit" Butonu (Altta Yüzen) */}
       <View style={styles.submitContainer}>
         <Button
           mode="contained"
@@ -252,7 +227,6 @@ const UploadScreen = ({ route }) => {
   );
 };
 
-// STYLES (Değişiklik yok)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -262,32 +236,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16, // p-4
-    paddingBottom: 150, // Yüzen buton ve tab bar için boşluk
+    padding: 16,
+    paddingBottom: 150,
   },
 
-  // Video Yükleme Kutusu
   uploadBox: {
     alignItems: 'center',
-    gap: 12, // gap-6 (px-6 / 4 = 1.5rem -> 24px... 12 daha iyi durur)
-    borderRadius: 12, // rounded-xl
+    gap: 12, 
+    borderRadius: 12, 
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: COLORS.border,
-    paddingVertical: 56, // py-14
-    paddingHorizontal: 24, // px-6
+    paddingVertical: 56,
+    paddingHorizontal: 24,
   },
   uploadBoxTitle: {
     color: COLORS.text,
     fontSize: 18,
-    fontWeight: '700', // font-bold
+    fontWeight: '700',
   },
   uploadBoxSubtitle: {
     color: COLORS.textSecondary,
     fontSize: 14,
   },
   selectButton: {
-    backgroundColor: COLORS.surface, // bg-zinc-800
+    backgroundColor: COLORS.surface,
     borderRadius: 8,
   },
   selectButtonLabel: {
@@ -295,16 +268,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
-
-  // Video Önizleme
   videoPreviewContainer: {
     borderRadius: 12,
-    overflow: 'hidden', // Videonun köşelerini kes
+    overflow: 'hidden',
     backgroundColor: '#000',
   },
   videoPreview: {
     width: '100%',
-    height: 250, // Yüksekliği sabit verelim
+    height: 250,
   },
   changeVideoButton: {
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -319,24 +290,22 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
   },
-
-  // Egzersiz Seçimi
   exerciseSection: {
-    paddingTop: 24, // pt-4 (16px) + gap (12px)
+    paddingTop: 24,
   },
   sectionTitle: {
     color: COLORS.text,
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12, // pb-3
+    marginBottom: 12,
   },
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12, // gap-3
+    gap: 12,
   },
   chip: {
-    height: 32, // h-8
+    height: 32,
     justifyContent: 'center',
   },
   chipSelected: {
@@ -355,19 +324,17 @@ const styles = StyleSheet.create({
   chipTextUnselected: {
     color: COLORS.text,
   },
-
-  // Submit Butonu
   submitContainer: {
     position: 'absolute',
-    bottom: 60, // Tab bar yüksekliği (60)
+    bottom: 60,
     left: 16,
     right: 16,
-    paddingVertical: 12, // py-3
+    paddingVertical: 12,
     zIndex: 10,
   },
   submitButton: {
-    height: 48, // h-12
-    borderRadius: 12, // rounded-xl
+    height: 48,
+    borderRadius: 12,
     backgroundColor: COLORS.accent,
     justifyContent: 'center',
   },
