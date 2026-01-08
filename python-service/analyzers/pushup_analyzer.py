@@ -159,7 +159,7 @@ def analyze_pushup(video_url, video_id):
                     
                     if current_angle is not None:
                         if state == "up":
-                            if current_angle < 140:
+                            if current_angle < 130:
                                 state = "down"
                                 min_angle_in_rep = current_angle
                         
